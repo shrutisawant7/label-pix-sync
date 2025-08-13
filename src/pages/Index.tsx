@@ -37,6 +37,19 @@ const Index = () => {
     }
   };
 
+  const handleUpdateComments = async (id: string, newComments: string) => {
+    try {
+      await googleSheetsService.updateImageComments(id, newComments);
+      setImages(prev => 
+        prev.map(img => 
+          img.id === id ? { ...img, comments: newComments } : img
+        )
+      );
+    } catch (error) {
+      throw new Error('Failed to update comments');
+    }
+  };
+
   const handleRefresh = async () => {
     await loadImages();
   };
@@ -49,6 +62,7 @@ const Index = () => {
     <ImageGallery
       images={images}
       onUpdateLabel={handleUpdateLabel}
+      onUpdateComments={handleUpdateComments}
       onRefresh={handleRefresh}
       loading={loading}
     />

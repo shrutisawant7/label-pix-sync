@@ -10,16 +10,18 @@ export interface ImageData {
   id: string;
   url: string;
   label: string;
+  comments?: string;
 }
 
 interface ImageGalleryProps {
   images: ImageData[];
   onUpdateLabel: (id: string, newLabel: string) => Promise<void>;
+  onUpdateComments: (id: string, newComments: string) => Promise<void>;
   onRefresh: () => Promise<void>;
   loading?: boolean;
 }
 
-export function ImageGallery({ images, onUpdateLabel, onRefresh, loading = false }: ImageGalleryProps) {
+export function ImageGallery({ images, onUpdateLabel, onUpdateComments, onRefresh, loading = false }: ImageGalleryProps) {
   const [selectedImage, setSelectedImage] = useState<ImageData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const { toast } = useToast();
@@ -59,15 +61,7 @@ export function ImageGallery({ images, onUpdateLabel, onRefresh, loading = false
       {/* Header */}
       <div className="sticky top-0 z-10 bg-gallery-bg/80 backdrop-blur-sm border-b border-border">
         <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Image Gallery
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                {images.length} images • Click to zoom, double-click labels to edit
-              </p>
-            </div>
+          <div className="flex items-center justify-end">
             <div className="flex items-center gap-3">
               <GoogleSheetsSetup onConfigured={handleRefresh} />
               <Button 
@@ -102,6 +96,7 @@ export function ImageGallery({ images, onUpdateLabel, onRefresh, loading = false
                 image={image}
                 onImageClick={() => setSelectedImage(image)}
                 onLabelUpdate={onUpdateLabel}
+                onCommentsUpdate={onUpdateComments}
               />
             ))}
           </div>
@@ -115,6 +110,7 @@ export function ImageGallery({ images, onUpdateLabel, onRefresh, loading = false
           isOpen={!!selectedImage}
           onClose={() => setSelectedImage(null)}
           onLabelUpdate={onUpdateLabel}
+          onCommentsUpdate={onUpdateComments}
         />
       )}
     </div>

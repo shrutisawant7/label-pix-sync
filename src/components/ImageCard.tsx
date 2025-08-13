@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Edit2, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ImageData } from './ImageGallery';
 
@@ -9,25 +11,28 @@ interface ImageCardProps {
   image: ImageData;
   onImageClick: () => void;
   onLabelUpdate: (id: string, newLabel: string) => Promise<void>;
+  onCommentsUpdate: (id: string, newComments: string) => Promise<void>;
 }
 
-export function ImageCard({ image, onImageClick, onLabelUpdate }: ImageCardProps) {
-  const [isEditing, setIsEditing] = useState(false);
+export function ImageCard({ image, onImageClick, onLabelUpdate, onCommentsUpdate }: ImageCardProps) {
+  const [isEditingLabel, setIsEditingLabel] = useState(false);
+  const [isEditingComments, setIsEditingComments] = useState(false);
   const [editedLabel, setEditedLabel] = useState(image.label);
+  const [editedComments, setEditedComments] = useState(image.comments || '');
   const [isUpdating, setIsUpdating] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const { toast } = useToast();
 
-  const handleSave = async () => {
+  const handleSaveLabel = async () => {
     if (editedLabel.trim() === image.label) {
-      setIsEditing(false);
+      setIsEditingLabel(false);
       return;
     }
 
     setIsUpdating(true);
     try {
       await onLabelUpdate(image.id, editedLabel.trim());
-      setIsEditing(false);
+      setIsEditingLabel(false);
       toast({
         title: "Label updated",
         description: "The image label has been saved successfully.",
@@ -38,20 +43,46 @@ export function ImageCard({ image, onImageClick, onLabelUpdate }: ImageCardProps
         description: "Could not update the label. Please try again.",
         variant: "destructive",
       });
-      setEditedLabel(image.label); // Reset to original
+      setEditedLabel(image.label);
     } finally {
       setIsUpdating(false);
     }
   };
 
-  const handleCancel = () => {
-    setEditedLabel(image.label);
-    setIsEditing(false);
+  const handleSaveComments = async () => {
+    if (editedComments.trim() === (image.comments || '')) {
+      setIsEditingComments(false);
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      await onCommentsUpdate(image.id, editedComments.trim());
+      setIsEditingComments(false);
+      toast({
+        title: "Comments updated",
+        description: "The image comments have been saved successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Update failed",
+        description: "Could not update the comments. Please try again.",
+        variant: "destructive",
+      });
+      setEditedComments(image.comments || '');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
-  const handleLabelDoubleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsEditing(true);
+  const handleCancelLabel = () => {
+    setEditedLabel(image.label);
+    setIsEditingLabel(false);
+  };
+
+  const handleCancelComments = () => {
+    setEditedComments(image.comments || '');
+    setIsEditingComments(false);
   };
 
   return (
@@ -87,56 +118,112 @@ export function ImageCard({ image, onImageClick, onLabelUpdate }: ImageCardProps
         </div>
       </div>
 
-      {/* Label Section */}
-      <div className="p-4">
-        {isEditing ? (
-          <div className="space-y-3">
-            <Input
-              value={editedLabel}
-              onChange={(e) => setEditedLabel(e.target.value)}
-              placeholder="Enter image label..."
-              className="text-sm"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSave();
-                if (e.key === 'Escape') handleCancel();
-              }}
-            />
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={handleSave}
-                disabled={isUpdating}
-                className="flex-1"
-              >
-                {isUpdating ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Save className="w-3 h-3 mr-1" />
-                )}
-                Save
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={isUpdating}
-              >
-                <X className="w-3 h-3" />
-              </Button>
+      {/* Label and Comments Section */}
+      <div className="p-4 space-y-3">
+        {/* Label */}
+        <div>
+          <Label className="text-xs text-muted-foreground mb-1 block">Label</Label>
+          {isEditingLabel ? (
+            <div className="space-y-2">
+              <Input
+                value={editedLabel}
+                onChange={(e) => setEditedLabel(e.target.value)}
+                placeholder="Enter image label..."
+                className="text-sm text-black"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveLabel();
+                  if (e.key === 'Escape') handleCancelLabel();
+                }}
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleSaveLabel}
+                  disabled={isUpdating}
+                  className="flex-1"
+                >
+                  {isUpdating ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Save className="w-3 h-3 mr-1" />
+                  )}
+                  Save
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCancelLabel}
+                  disabled={isUpdating}
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div 
-            className="flex items-center justify-between group/label cursor-pointer"
-            onDoubleClick={handleLabelDoubleClick}
-          >
-            <p className="text-sm font-medium text-card-foreground group-hover/label:text-primary transition-colors">
-              {image.label || 'Untitled'}
-            </p>
-            <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover/label:opacity-100 transition-opacity" />
-          </div>
-        )}
+          ) : (
+            <div 
+              className="flex items-center justify-between group/label cursor-pointer border rounded p-2 hover:bg-muted/50"
+              onClick={() => setIsEditingLabel(true)}
+            >
+              <p className="text-sm font-medium text-black">
+                {image.label || 'Click to add label'}
+              </p>
+              <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover/label:opacity-100 transition-opacity" />
+            </div>
+          )}
+        </div>
+
+        {/* Comments */}
+        <div>
+          <Label className="text-xs text-muted-foreground mb-1 block">Comments</Label>
+          {isEditingComments ? (
+            <div className="space-y-2">
+              <Textarea
+                value={editedComments}
+                onChange={(e) => setEditedComments(e.target.value)}
+                placeholder="Enter comments..."
+                className="text-sm text-black min-h-[60px]"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') handleCancelComments();
+                }}
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleSaveComments}
+                  disabled={isUpdating}
+                  className="flex-1"
+                >
+                  {isUpdating ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Save className="w-3 h-3 mr-1" />
+                  )}
+                  Save
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCancelComments}
+                  disabled={isUpdating}
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div 
+              className="flex items-start justify-between group/comments cursor-pointer border rounded p-2 hover:bg-muted/50 min-h-[60px]"
+              onClick={() => setIsEditingComments(true)}
+            >
+              <p className="text-sm text-black flex-1">
+                {image.comments || 'Click to add comments'}
+              </p>
+              <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover/comments:opacity-100 transition-opacity mt-0.5" />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

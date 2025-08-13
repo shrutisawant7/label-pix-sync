@@ -116,6 +116,23 @@ class GoogleSheetsService {
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
+  // Update image comments
+  async updateImageComments(id: string, newComments: string): Promise<void> {
+    const images = await this.initializeData();
+    const imageIndex = images.findIndex(img => img.id === id);
+    
+    if (imageIndex === -1) {
+      throw new Error('Image not found');
+    }
+
+    images[imageIndex].comments = newComments;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
+
+    // In a real implementation, this would update the Google Sheet via API
+    // For now, we'll simulate the API call
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
   // Add new image
   async addImage(url: string, label: string): Promise<ImageData> {
     const images = await this.initializeData();
